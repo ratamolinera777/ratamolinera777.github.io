@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Juego de Arkanoid</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+    <style>
+      body {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+          padding: 0;
+          background-color: black;
+      }
+
+      #canvas {
+          display: block;
+          margin: 0 auto;
+          height: 70vh; /* Ajusta la altura del canvas según tus preferencias */
+      }
+
+      h1 {
+          color: white;
+          text-align: center;
+          margin: 30;
+          font-size: 5vh; /* Ajusta el tamaño del texto según tus preferencias */
+          font-family: 'Press Start 2P';
+      }
+      /* Establece colores específicos para cada letra */
+      .a { color: #FF0000; }
+        .r { color: #FF0000; }
+        .k { color: #FF8800; }
+        .a2 { color: #FFFF00; }
+        .n { color: #00A30E; }
+        .o { color: #0026FF; }
+        .i { color: #6600C5; }
+        .d { color: #6600C5; }
+
+      h2 {
+          color: white;
+          text-align: center;
+          margin: 30;
+          font-size: 2vh; /* Ajusta el tamaño del texto según tus preferencias */
+          font-family: 'Press Start 2P';
+      }
+  </style>
+
+</head>
+<body>
+<h1>
+  <span class="a">A</span><span class="r">R</span><span class="k">K</span><span class="a2">A</span><span class="n">N</span><span class="o">O</span><span class="i">I</span><span class="d">D</span>
+</h1>
+<canvas id="canvas" style="border: 5px solid white;"></canvas>
+<script>
+    var colores = ['#FF0000', '#FF8800', '#FFFF00', '#00A30E', '#0026FF', '#4B0082'];
+    var w=400, h=600, bolaSize=10, bloqueW=30, bloqueH=20, batW=100, batH=20
+    var bolaX, bolaY, dx, dy, bloques=[], batX=w/2, batY=h-50
+    var vidas = 3;
+    var c = document.getElementById("canvas")
+    var ctx = canvas.getContext("2d")
+    c.width = w; c.height = h
+
+    function init() {
+      vidas=3, bloques=[], bolaX=w/2, bolaY=h-100, dx=1, dy=-1
+
+      var numRows = 6 // Numero de filas de ladrillos
+      var numCols = 10 // Numero de columnas de ladrillos
+
+      for (var y = 0; y < numRows; y++) {
+        var colorIndex = y % colores.length; // asigna un indice a cada fila
+        for (var x = 0; x < numCols; x++) {
+          bloques.push({
+            x: 50 + x * bloqueW,
+            y: 50 + y * bloqueH,
+            active: true,
+            color: colores[colorIndex] // Asigna el color segun el indice de la fila
+          });
+        }
+      }
+
+
+      for (var i = 0; i < bloques.length; i++) {
+        bloques[i].hitsNeeded = Math.floor(Math.random() * 3) + 1; // Número aleatorio entre 1 y 3 golpes
+      }
+    }
+  
+    function dibujarRecta(color, x, y, w, h) {
+      ctx.beginPath()
+      if(color){
+        ctx.fillStyle = color
+      }
+      ctx.rect(x, y, w, h)
+      ctx.fill()
+      ctx.stroke()
+    }
+  
+    function dibujarBola(color, x, y, r) {
+      ctx.fillStyle = color
+      ctx.beginPath()
+      ctx.arc(x, y, r, 0, 2*Math.PI, false)
+      ctx.fill()
+    }
+
+    function dibujarVidas(color, fuente) {
+      ctx.fillStyle = color;
+      ctx.font = fuente;
+      ctx.fillText("Vidas: " + vidas, 15, 30);
+    }
+  
+    function draw() {
+      ctx.fillStyle = '#303030'; //fondo no cambia de color
+      dibujarRecta('000', 0, 0, w, h) //fondo
+      dibujarVidas('#fff', "15px 'Press Start 2P'") //numero de vidas
+      dibujarBola('#fff', bolaX, bolaY, bolaSize) //bola
+      ctx.fillStyle = '#000';
+      dibujarRecta('#000', batX - batW / 2, batY, batW, batH) //barra de control
+      for (var i = 0; i < bloques.length; i++) {
+        var b = bloques[i];
+        if (!b.active) continue;
+        ctx.fillStyle = b.color;
+        dibujarRecta(b.color, b.x, b.y, bloqueW, bloqueH); //bloques
+      }
+      
+    }
+  
+    function move() {
+      if (bolaX-bolaSize+dx < 0 || bolaX+bolaSize+dx > w) dx = -dx
+      if (bolaY-bolaSize+dy < 0) dy = -dy
+      if (bolaY-bolaSize> batY) return false
+      if (bolaY+bolaSize > batY && bolaX+bolaSize > batX-batW/2 && bolaX-bolaSize < batX+batW/2) dy = -dy
+      bolaX += dx
+      bolaY += dy
+      for (var i = 0; i < bloques.length; i++) {
+        var b = bloques[i];
+        if (!b.active) continue;
+        if (b.x < bolaX + bolaSize && bolaX - bolaSize < b.x + bloqueW && b.y < bolaY + bolaSize && bolaY - bolaSize < b.y + bloqueH) {
+          dy = -dy;
+          // Reducir el contador de golpes necesarios
+          b.hitsNeeded--; 
+          if (b.hitsNeeded <= 0) {
+            b.active = false; // Desactivar el bloque si se alcanza el número de golpes necesarios
+          }
+          break; // Salir del bucle después de colisionar con un bloque
+        }
+      }
+      return true
+    }
+  
+    function game() {
+      if (!move()) {
+        vidas = vidas-1
+        //alert(vidas + ' vidas restantes!')
+        bolaX = w / 2, bolaY = h - 100, dx=1, dy=-1
+      }
+
+      var blocksLeft = bloques.filter(function (b) {
+        return b.active;
+      });
+
+      if (blocksLeft.length === 0) {
+        alert('¡Nivel completado!');
+        init(); // Reiniciar el juego
+      }
+      if (vidas <= 0){
+        alert('Game over!')
+        init()
+      }
+      draw()
+    }
+    
+    document.addEventListener("mousemove", function (e) {
+        var mouseX = e.clientX - c.getBoundingClientRect().left;
+        // Ajusta la posición de la barra según la posición del ratón
+        batX = Math.max(Math.min(mouseX, w - batW / 2), batW / 2);
+    });
+
+    init()
+    setInterval(game, 1)
+  </script>
+
+  <footer class="text-center footer-style">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 footer-col">
+                <h2>-------------------------------------------------------------------------------------------------</h2>
+                <h2>Practica realiza por Alberto Lopez Garcia de Ceca y Angela Sanchez Diaz </h2>
+                <h2>-------------------------------------------------------------------------------------------------</h2>
+            </div>
+        </div>
+    </div>
+  </footer>
+
+  </body>
+</html>
